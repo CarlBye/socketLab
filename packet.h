@@ -1,17 +1,17 @@
 #ifndef _packet_H
 #define _packet_H
 
-#define MAXDATAELEN 256
+#define MAXDATALEN 256
 
 typedef enum { REQUEST, RESPONSE, INSTRUCT } packetType;
-typedef enum { TIME, NAME, LIST, MESSAGE } requestType;
+typedef enum { TIME, NAME, LIST, MESSAGE ,DISCONNECT} requestType;
 typedef enum { CORRECT, WRONG } responseType;
 typedef enum { FORWARD } instructType;
 
-typedef struct request_packet {
+typedef struct spacket {
 	packetType pType;
 	int type;
-	char data[MAXDATAELEN]; 
+	char data[MAXDATALEN]; 
 } packet;
 
 #endif
