@@ -27,7 +27,7 @@ void *waitServer(void* socketfd){
 void sendDisRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)DISCONNECT;
+	pkt.type = (int)DISCONNECT;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -35,7 +35,7 @@ void sendDisRequestPacket(int socketfd) {
 void sendTimeRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)TIME;
+	pkt.type = (int)TIME;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -43,7 +43,7 @@ void sendTimeRequestPacket(int socketfd) {
 void sendNameRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)NAME;
+	pkt.type = (int)NAME;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -51,7 +51,7 @@ void sendNameRequestPacket(int socketfd) {
 void sendListRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)LIST;
+	pkt.type = (int)LIST;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -60,7 +60,7 @@ void sendMessageRequestPacket(int socketfd) {
 	int destClient;
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)MESSAGE;
+	pkt.type = (int)MESSAGE;
 	memset(pkt.data, 0, sizeof(pkt.data));
 
 	printf("(Client) PLease input client id you want to send: ");
