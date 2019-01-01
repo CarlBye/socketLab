@@ -25,8 +25,8 @@ typedef struct TIDLIST
 	struct TIDLIST *next;
 }tidList;
 
-tidList *start_node;
-tidList *current_node;
+tidList *start_node = NULL;
+tidList *current_node = NULL;
 
 // the array to store socketfd of client, if no connect the element will be 0
 struct client_fd
@@ -73,14 +73,18 @@ int main(int argc, char *argv[])
 	int struct_len;
 	struct sockaddr_in server_addr;
 	
+	printf("Server Service Initialize!\n");
+	/*
 	if(initTidList() == -1)
 		return 0;
+	*/
 
 	// init the array of client socketfd
 	cfd.tail = 0;
 	memset(cfd.fd, LISTENSIZE, 0);
 	for(int i = 0; i < LISTENSIZE; i++)
 		client_list[i].fd = 0;
+
 	// init the attribute of sockaddr_in to create new server socket
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(SERVERPORT);
@@ -96,11 +100,14 @@ int main(int argc, char *argv[])
 		printf("BIND ERROR!\n");
 		return 0;
 	}
+	printf("Bind Service Start!\n");
 	// listen the client connect 
 	if(listen(server_fd, LISTENSIZE) < 0){
 		printf("LISTEN ERROR!\n");
 		return 0;
 	}
+	printf("Listen Service Start!\n");
+	printf("Server Service Start!\n");
 	while(1){
 		sleep(20);
 		isAccept();
@@ -114,7 +121,8 @@ int main(int argc, char *argv[])
  */
 int initTidList()
 {
-	if(start_node = (tidList*)malloc(sizeof(struct TIDLIST)) == NULL){
+	start_node = (tidList*)malloc(sizeof(struct TIDLIST));
+	if(start_node == NULL){
 		printf("Init tid list failed!\nPlease reboot the server!\n");
 		return -1;
 	}
@@ -138,13 +146,15 @@ int isAccept()
 		pthread_mutex_lock(&mutex);
 		cfd.fd[cfd.tail] = accept(server_fd, (struct sockaddr*)&client_addr, &struct_len);
 		cfd.tail++;
-		is_cfd_full = 0;
+		is_cfd_full = 1;
 		for(int i = 0; i < LISTENSIZE; i++){
 			if(client_list[i].fd == 0){
-				client_list[i].fd == cfd.fd[cfd.tail - 1];
+				client_list[i].fd = cfd.fd[cfd.tail - 1];
 				client_list[i].port = client_addr.sin_port;
 				client_list[i].addr = client_addr.sin_addr;
+				printf("Sockfd:%d Port:%hu IP:%s\n", cfd.fd[cfd.tail - 1], client_list[i].port, inet_ntoa(client_list[i].addr));
 				is_cfd_full = 0;
+				break;
 			}
 		}
 		if(is_cfd_full){
@@ -170,13 +180,18 @@ int createConnectPthread()
 	pthread_t tid;
 	
 	pthread_attr_init(&attr);
+	//printf("attr init succeed!\n");
 	pthread_create(&tid, &attr, handleConnect, (void*)NULL);
-	if(current_node->next = (tidList*)malloc(sizeof(struct TIDLIST)) == NULL){
+	//printf("create succeed!\n");
+	/*
+	current_node->next = (tidList*)malloc(sizeof(struct TIDLIST));
+	if(current_node->next == NULL){
 		printf("Create new node failed!");
 		return -1;
 	}
 	current_node->next->tid = tid;
 	current_node->next->next = NULL;
+	*/
 	return 0;
 }
 
@@ -188,23 +203,33 @@ void* handleConnect()
 	int fd, num_bytes;
 	char buff[BUFFSIZE];
 	packet *get_packet;
+	packet pkt;	
 
+	printf("start get connect sockfd\n");
 	// get the client fd from the cfd
 	pthread_mutex_lock(&mutex);
 	cfd.tail--;
 	fd = cfd.fd[cfd.tail];
 	pthread_mutex_unlock(&mutex);
 	// after connect succeed send a packet to esure
+	printf("get connect sockfd:%d\n", fd);
 	sendHelloPacket(fd);
 
 	while(1){
-		num_bytes = recv(fd, buff, BUFFSIZE, 0);
+		get_packet = (packet*)malloc(sizeof(packet));
+		if(get_packet == NULL){
+			printf("memory is full!\n");
+			return 0;
+		}
+		num_bytes = recv(fd, (char*)&pkt, sizeof(pkt), 0);
 		if(num_bytes < 0){
 			printf("from socketfd:%d get error packet\n", fd);
 			break;
 		}
-		get_packet = (packet*)buff;
-		if(handlePacket(get_packet, fd) == -1){
+		printf("from socketfd:%d get packet\n", fd);
+		//get_packet = (packet*)buff;
+		printf("from socketfd:%d packet pType:%d, type:%d, data:%s\n", fd, pkt.pType, pkt.type, pkt.data);
+		if(handlePacket(&pkt, fd) == -1){
 			return;
 		}
 	}
@@ -218,9 +243,16 @@ void* handleConnect()
 void sendHelloPacket(int fd)
 {
 	packet hello_packet;
+	//char test[256];
 	hello_packet.pType = RESPONSE;
 	hello_packet.type = CORRECT;
-	int num_bytes = sprintf(hello_packet.data, "Socketfd:%d connect succeed!", fd);
+	//hello_packet.data[0] = '\0';
+	printf("start generate hello packet data\n");
+	sprintf(hello_packet.data, "Socketfd:%d connect succeed!", fd);
+	printf("hello.data:%s\n", hello_packet.data);
+	//sprintf(test, "Socketfd:%d connect succeed!", fd);
+	//printf("\n%s\n", test);
+	printf("generate hello packet data succeed\n");
 	send(fd, (char*)&hello_packet, sizeof(hello_packet), 0);
 }
 
@@ -237,7 +269,7 @@ int handlePacket(packet *get_packet, int fd)
 		}else if(r_type == NAME){
 			handleNamePacket(get_packet, fd);
 		}else if(r_type == LIST){
-			//need
+			handleListPacket(get_packet, fd);
 		}else if(r_type == MESSAGE){
 			handleMessagePacket(get_packet, fd);
 		}else if(r_type == DISCONNECT){// handle client quit and close socket
@@ -293,14 +325,19 @@ void handleListPacket(packet *get_packet, int fd)
 	packet s_packet;
 	s_packet.pType = RESPONSE;
 	s_packet.type = CORRECT;
-	s_packet.data[0] = '\0';
+	//printf("handle list packet!\n");
 	pthread_mutex_lock(&mutex);
+		int j = 0;	
 		for(int i = 0; i < LISTENSIZE; i++){
 			if(client_list[i].fd > 0){
-				int num_bytes = sprintf(s_packet.data, "%sSockfd:%d Port:%hu IP:%s\n", s_packet.data, client_list[i].fd, client_list[i].port, inet_ntoa(client_list[i].addr));
+				j += sprintf(s_packet.data + j, "Sockfd:%d ", client_list[i].fd);
+				j += sprintf(s_packet.data + j, "Port:%hu ", client_list[i].port);
+				j += sprintf(s_packet.data + j, "IP:%s\n", inet_ntoa(client_list[i].addr));
+				//printf("Sockfd:%d Port:%hu IP:%s\n", client_list[i].fd, client_list[i].port, inet_ntoa(client_list[i].addr));
+				//printf("%s\n",s_packet.data);
 			}
 		}
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_unlock(&mutex);
 	send(fd, (char*)&s_packet, sizeof(s_packet), 0);
 	return;
 }
