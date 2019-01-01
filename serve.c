@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <time.h>
 #include <string.h>
+#include <signal.h>
 
 // the size of listen quene is 10
 #define LISTENSIZE 10
@@ -48,7 +49,8 @@ int server_fd;
 // sy the array of sockfd
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
-
+//
+static void myExitHandler(int sig);
 // init the tid list
 int initTidList();
 // if success return 0 if fail return -1
@@ -73,6 +75,7 @@ int main(int argc, char *argv[])
 	int struct_len;
 	struct sockaddr_in server_addr;
 	
+	signal(SIGINT, myExitHandler);
 	printf("Server Service Initialize!\n");
 	/*
 	if(initTidList() == -1)
@@ -109,10 +112,25 @@ int main(int argc, char *argv[])
 	printf("Listen Service Start!\n");
 	printf("Server Service Start!\n");
 	while(1){
-		sleep(20);
 		isAccept();
 	}
 
+}
+
+static void myExitHandler(int sig)
+{
+	pthread_mutex_lock(&mutex);
+	printf("\n");
+	for(int i = 0; i < LISTENSIZE; i++){
+		if(client_list[i].fd > 0){
+			printf("\t\tsockfd:%d connect close\n", client_list[i].fd);
+			close(client_list[i].fd);
+			client_list[i].fd = 0;
+		}
+	}
+	pthread_mutex_unlock(&mutex);
+	printf("\nServer Exit!\n");
+	exit(0);
 }
 
 /*
@@ -143,8 +161,9 @@ int isAccept()
 	
 	struct_len = sizeof(struct sockaddr_in);
 	if(cfd.tail < LISTENSIZE){
+		int temp = accept(server_fd, (struct sockaddr*)&client_addr, &struct_len);
 		pthread_mutex_lock(&mutex);
-		cfd.fd[cfd.tail] = accept(server_fd, (struct sockaddr*)&client_addr, &struct_len);
+		cfd.fd[cfd.tail] = temp;		
 		cfd.tail++;
 		is_cfd_full = 1;
 		for(int i = 0; i < LISTENSIZE; i++){
@@ -152,21 +171,21 @@ int isAccept()
 				client_list[i].fd = cfd.fd[cfd.tail - 1];
 				client_list[i].port = client_addr.sin_port;
 				client_list[i].addr = client_addr.sin_addr;
-				printf("Sockfd:%d Port:%hu IP:%s\n", cfd.fd[cfd.tail - 1], client_list[i].port, inet_ntoa(client_list[i].addr));
+				printf("\tSockfd:%d Port:%hu IP:%s Connecting\n", cfd.fd[cfd.tail - 1], client_list[i].port, inet_ntoa(client_list[i].addr));
 				is_cfd_full = 0;
 				break;
 			}
 		}
 		if(is_cfd_full){
-			printf("socketfd:%d connect failed!\n", cfd.fd[cfd.tail - 1]);
+			printf("\t\tsocketfd:%d connect failed!\n", cfd.fd[cfd.tail - 1]);
 		}else{
-			printf("socketfd:%d connect succeed!\n", cfd.fd[cfd.tail - 1]);
+			printf("\t\tsocketfd:%d connect succeed!\n", cfd.fd[cfd.tail - 1]);
 			createConnectPthread();
 		}
 		pthread_mutex_unlock(&mutex);
 		
 	}else{
-		printf("Client Connect is full!\n");
+		printf("\tClient Connect is full!\n");
 	}
 	return 0;
 }
@@ -201,34 +220,26 @@ int createConnectPthread()
 void* handleConnect()
 {
 	int fd, num_bytes;
-	char buff[BUFFSIZE];
-	packet *get_packet;
-	packet pkt;	
 
-	printf("start get connect sockfd\n");
+	printf("\t\tstart get connect sockfd\n");
 	// get the client fd from the cfd
 	pthread_mutex_lock(&mutex);
 	cfd.tail--;
 	fd = cfd.fd[cfd.tail];
 	pthread_mutex_unlock(&mutex);
 	// after connect succeed send a packet to esure
-	printf("get connect sockfd:%d\n", fd);
+	printf("\t\tget connect sockfd:%d\n", fd);
 	sendHelloPacket(fd);
 
 	while(1){
-		get_packet = (packet*)malloc(sizeof(packet));
-		if(get_packet == NULL){
-			printf("memory is full!\n");
-			return 0;
-		}
+		packet pkt;
 		num_bytes = recv(fd, (char*)&pkt, sizeof(pkt), 0);
 		if(num_bytes < 0){
-			printf("from socketfd:%d get error packet\n", fd);
+			printf("\t\t\tfrom socketfd:%d get error packet\n", fd);
 			break;
 		}
-		printf("from socketfd:%d get packet\n", fd);
-		//get_packet = (packet*)buff;
-		printf("from socketfd:%d packet pType:%d, type:%d, data:%s\n", fd, pkt.pType, pkt.type, pkt.data);
+		printf("\t\t\tfrom socketfd:%d get packet\n", fd);
+		printf("\t\t\tfrom socketfd:%d packet pType:%d, type:%d, data:%s\n", fd, pkt.pType, pkt.type, pkt.data);
 		if(handlePacket(&pkt, fd) == -1){
 			return;
 		}
@@ -243,16 +254,12 @@ void* handleConnect()
 void sendHelloPacket(int fd)
 {
 	packet hello_packet;
-	//char test[256];
+
 	hello_packet.pType = RESPONSE;
 	hello_packet.type = CORRECT;
-	//hello_packet.data[0] = '\0';
-	printf("start generate hello packet data\n");
-	sprintf(hello_packet.data, "Socketfd:%d connect succeed!", fd);
-	printf("hello.data:%s\n", hello_packet.data);
-	//sprintf(test, "Socketfd:%d connect succeed!", fd);
-	//printf("\n%s\n", test);
-	printf("generate hello packet data succeed\n");
+	printf("\t\t\tstart generate hello packet data\n");
+	sprintf(hello_packet.data, "\n(Server) Socketfd:%d connect succeed!\n", fd);
+	printf("\t\t\tgenerate hello packet data succeed\n");
 	send(fd, (char*)&hello_packet, sizeof(hello_packet), 0);
 }
 
@@ -275,14 +282,14 @@ int handlePacket(packet *get_packet, int fd)
 		}else if(r_type == DISCONNECT){// handle client quit and close socket
 			return handleDisconnectPacket(get_packet, fd);
 		}else{
-			printf("Error type!\n");
+			printf("\t\t\tError type!\n");
 		}
 	}else if(get_packet->pType == RESPONSE){
-		printf("Can't recv RESPONSE packet!\n");
+		printf("\t\t\tCan't recv RESPONSE packet!\n");
 	}else if(get_packet->pType == INSTRUCT){
-		printf("Can't recv INSTRUCT packet!\n");
+		printf("\t\t\tCan't recv INSTRUCT packet!\n");
 	}else{
-		printf("Error Packet!\n");
+		printf("\t\t\tError Packet!\n");
 	}
 	return 0;
 }
@@ -297,7 +304,7 @@ void handleTimePacket(packet *get_packet, int fd)
 	struct tm *lt;
 	time(&t);
 	lt = localtime(&t);
-	int num_bytes = sprintf(s_packet.data, "Date:%d/%d/%d Time:%d:%d:%d", lt->tm_year + 1900, lt->tm_mon, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
+	int num_bytes = sprintf(s_packet.data, "(Server) Date:%d/%d/%d Time:%d:%d:%d\n", lt->tm_year + 1900, lt->tm_mon, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
 	s_packet.pType = RESPONSE;
 	s_packet.type = CORRECT;
 	send(fd, (char*)&s_packet, sizeof(s_packet), 0);
@@ -310,7 +317,9 @@ void handleTimePacket(packet *get_packet, int fd)
 void handleNamePacket(packet *get_packet, int fd)
 {
 	packet s_packet;
-	int res = gethostname(s_packet.data, sizeof(s_packet.data));
+	char host_name[256];
+	int res = gethostname(host_name, sizeof(host_name));
+	sprintf(s_packet.data, "(Server) %s\n", host_name);
 	s_packet.pType = RESPONSE;
 	s_packet.type = CORRECT;
 	send(fd, (char*)&s_packet, sizeof(s_packet), 0);
@@ -325,16 +334,14 @@ void handleListPacket(packet *get_packet, int fd)
 	packet s_packet;
 	s_packet.pType = RESPONSE;
 	s_packet.type = CORRECT;
-	//printf("handle list packet!\n");
+
 	pthread_mutex_lock(&mutex);
 		int j = 0;	
 		for(int i = 0; i < LISTENSIZE; i++){
 			if(client_list[i].fd > 0){
-				j += sprintf(s_packet.data + j, "Sockfd:%d ", client_list[i].fd);
+				j += sprintf(s_packet.data + j, "(Server) Sockfd:%d ", client_list[i].fd);
 				j += sprintf(s_packet.data + j, "Port:%hu ", client_list[i].port);
 				j += sprintf(s_packet.data + j, "IP:%s\n", inet_ntoa(client_list[i].addr));
-				//printf("Sockfd:%d Port:%hu IP:%s\n", client_list[i].fd, client_list[i].port, inet_ntoa(client_list[i].addr));
-				//printf("%s\n",s_packet.data);
 			}
 		}
 	pthread_mutex_unlock(&mutex);
@@ -348,10 +355,10 @@ void handleListPacket(packet *get_packet, int fd)
 void handleMessagePacket(packet *get_packet, int fd)
 {
 	packet s_packet;
-	char *des_fd_str;
-	memcpy(des_fd_str, get_packet->data, sizeof(int));
-	int des_fd = *((int*)des_fd_str);// need to test
+
+	int des_fd = *((int*)get_packet->data);// need to test
 	int isExist = 0;
+	printf("\t\t\tsourcefd:%d desfd:%d\n", fd, des_fd);
 	pthread_mutex_lock(&mutex);
 		for(int i = 0; i < LISTENSIZE; i++){
 			if(client_list[i].fd == des_fd){
@@ -361,20 +368,21 @@ void handleMessagePacket(packet *get_packet, int fd)
 		}
 	pthread_mutex_unlock(&mutex);
 	if(isExist == 1){
+		printf("\t\t\tsockfd:%d send message to sockfd:%d isExist!\n", fd, des_fd);
+		printf("\t\t\tmessage in packet:%s\n", get_packet->data + sizeof(int));
 		s_packet.pType = INSTRUCT;
 		s_packet.type = FORWARD;
-		memcpy(s_packet.data, &(get_packet->data[sizeof(int)]), strlen(&(get_packet->data[sizeof(int)])));
+		sprintf(s_packet.data, "(Server) %s\n", get_packet->data + sizeof(int));
 		send(des_fd, (char*)&s_packet, sizeof(s_packet), 0);
 		packet r_packet;
 		r_packet.pType = RESPONSE;
 		r_packet.type = CORRECT;
-		int num_bytes = sprintf(r_packet.data, "message to socketfd:%d send succeed!", des_fd);
+		sprintf(r_packet.data, "(Server) message to socketfd:%d send succeed!\n", des_fd);
 		send(fd, (char*)&r_packet, sizeof(r_packet), 0);
-
 	}else{
 		s_packet.pType = RESPONSE;
 		s_packet.type = CORRECT;
-		int num_bytes = sprintf(s_packet.data, "No socketfd:%d", des_fd);
+		int num_bytes = sprintf(s_packet.data, "(Server) No socketfd:%d\n", des_fd);
 		send(fd, (char*)&s_packet, sizeof(s_packet), 0);
 	}
 	return;
@@ -385,8 +393,7 @@ void handleMessagePacket(packet *get_packet, int fd)
  */
 int handleDisconnectPacket(packet *get_packet, int fd)
 {
-	printf("disconnect socketfd:%d\n", fd);
-	
+	printf("\t\tdisconnect socketfd:%d\n", fd);	
 	pthread_mutex_lock(&mutex);
 	for(int i = 0; i < LISTENSIZE; i++){
 		if(client_list[i].fd == fd){
