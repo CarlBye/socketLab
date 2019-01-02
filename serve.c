@@ -241,7 +241,7 @@ void* handleConnect()
 		printf("\t\t\tfrom socketfd:%d get packet\n", fd);
 		printf("\t\t\tfrom socketfd:%d packet pType:%d, type:%d, data:%s\n", fd, pkt.pType, pkt.type, pkt.data);
 		if(handlePacket(&pkt, fd) == -1){
-			return;
+			return NULL;
 		}
 	}
 
@@ -317,7 +317,7 @@ void handleTimePacket(packet *get_packet, int fd)
 void handleNamePacket(packet *get_packet, int fd)
 {
 	packet s_packet;
-	char host_name[256];
+	char host_name[128];
 	int res = gethostname(host_name, sizeof(host_name));
 	sprintf(s_packet.data, "(Server) %s\n", host_name);
 	s_packet.pType = RESPONSE;
