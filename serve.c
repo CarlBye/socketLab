@@ -61,6 +61,7 @@ int createConnectPthread();
 void* handleConnect();
 //after socket connect succeed, server send a packet to ensure
 void sendHelloPacket(int fd);
+void sendExitPacket(int fd);
 // analysis the packet and make response
 int handlePacket(packet *get_packet, int fd);
 // use this function to response each type of request
@@ -123,17 +124,15 @@ static void myExitHandler(int sig)
 	printf("\n");
 	for(int i = 0; i < LISTENSIZE; i++){
 		if(client_list[i].fd > 0){
-			packet disconnect_packet;
-			disconnect_packet.pType = INSTRUCT;
-			disconnect_packet.type = (int)TERMINATE;
-			send(client_list[i].fd, (char*)&disconnect_packet, sizeof(packet), 0);
-			sleep(5);
+			sendExitPacket(client_list[i].fd);
+			//sendHelloPacket(client_list[i].fd);
 			printf("\t\tsockfd:%d connect close\n", client_list[i].fd);
 			close(client_list[i].fd);
 			client_list[i].fd = 0;
 		}
 	}
 	pthread_mutex_unlock(&mutex);
+	close(server_fd);
 	printf("\nServer Exit!\n");
 	exit(0);
 }
@@ -225,6 +224,7 @@ int createConnectPthread()
 void* handleConnect()
 {
 	int fd, num_bytes;
+	packet pkt;
 
 	printf("\t\tstart get connect sockfd\n");
 	// get the client fd from the cfd
@@ -237,7 +237,7 @@ void* handleConnect()
 	sendHelloPacket(fd);
 
 	while(1){
-		packet pkt;
+
 		num_bytes = recv(fd, (char*)&pkt, sizeof(pkt), 0);
 		if(num_bytes < 0){
 			printf("\t\t\tfrom socketfd:%d get error packet\n", fd);
@@ -246,10 +246,11 @@ void* handleConnect()
 		printf("\t\t\tfrom socketfd:%d get packet\n", fd);
 		printf("\t\t\tfrom socketfd:%d packet pType:%d, type:%d, data:%s\n", fd, pkt.pType, pkt.type, pkt.data);
 		if(handlePacket(&pkt, fd) == -1){
+
 			return NULL;
 		}
+		
 	}
-
 
 }
 
@@ -266,6 +267,17 @@ void sendHelloPacket(int fd)
 	sprintf(hello_packet.data, "\n(Server) Socketfd:%d connect succeed!\n", fd);
 	printf("\t\t\tgenerate hello packet data succeed\n");
 	send(fd, (char*)&hello_packet, sizeof(hello_packet), 0);
+}
+
+void sendExitPacket(int fd)
+{
+	packet exit_packet;
+
+	exit_packet.pType = INSTRUCT;
+	exit_packet.type = TERMINATE;
+	sprintf(exit_packet.data, "(Server) Serve Closed!\n");
+	send(fd, (char*)&exit_packet, sizeof(exit_packet), 0);
+	printf("\t\tpType:%d type:%d sockfd:%d connect close\n",exit_packet.pType, exit_packet.type ,fd);
 }
 
 /*

@@ -23,7 +23,7 @@ void *waitServer(void* socketfd){
 			printf("(Client) Server connection terminated! ");
 			pthread_exit(0);
 		}
-		// printf("%d\n",pkt.type);
+		printf("%d\n",pkt.type);
 		printf("%s\n",pkt.data);
 	}
 }
@@ -31,36 +31,36 @@ void *waitServer(void* socketfd){
 void sendDisRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)DISCONNECT;
+	pkt.type = (int)DISCONNECT;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("%s\n",pkt);
+	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
 void sendTimeRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)TIME;
+	pkt.type = (int)TIME;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("%s\n",pkt);
+	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
 void sendNameRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)NAME;
+	pkt.type = (int)NAME;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("%s\n",pkt);
+	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
 void sendListRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)LIST;
+	pkt.type = (int)LIST;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("%s\n",pkt);
+	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
@@ -68,7 +68,7 @@ void sendMessageRequestPacket(int socketfd) {
 	int destClient;
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type == (int)MESSAGE;
+	pkt.type = (int)MESSAGE;
 	memset(pkt.data, 0, sizeof(pkt.data));
 
 	printf("(Client) PLease input client id you want to send: ");
@@ -80,7 +80,7 @@ void sendMessageRequestPacket(int socketfd) {
 	fgets(pkt.data + sizeof(int), MAXDATALEN - sizeof(int), stdin);
 
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
-	printf("%s\n",pkt);
+	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	printf("(Client) sending message to client %d\n", destClient);
 }
 
