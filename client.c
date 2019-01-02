@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/shm.h>
+#include <sys/shm.h>  
 
 #include "packet.h"
 
@@ -18,9 +18,14 @@ void *waitServer(void* socketfd){
 	packet pkt;
 	char buf[20];
 	while(1) {
-		memset(pkt.data, 0, sizeof(pkt.data));       //check!
-		recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
-		printf("%s\n",pkt.data);
+		int recvBytes = recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
+		if(recvBytes > 0) {
+			printf("%s\n",pkt.data);
+		}
+		else {
+			printf("(Client) Socket has been terminated! ");
+			pthread_exit(0);
+		}		
 	}
 }
 
@@ -166,7 +171,8 @@ start:	printf("        Welcome To Socket Client!       \n");
 					sendDisRequestPacket(socketfd);
 					exit(0);
 			}
-		} 
+		}
+		pthread_join(p, NULL); 
 	    close(socketfd);
 	 	pthread_cancel(p);
 	}
