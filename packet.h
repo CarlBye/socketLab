@@ -3,10 +3,10 @@
 
 #define MAXDATALEN 256
 
-typedef enum { REQUEST, RESPONSE, INSTRUCT } packetType;
-typedef enum { TIME, NAME, LIST, MESSAGE ,DISCONNECT} requestType;
-typedef enum { CORRECT, WRONG } responseType;
-typedef enum { FORWARD, TERMINATE } instructType;
+typedef enum { REQUEST = 1, RESPONSE, INSTRUCT } packetType;
+typedef enum { TIME = 1, NAME, LIST, MESSAGE ,DISCONNECT} requestType;
+typedef enum { CORRECT = 1, WRONG } responseType;
+typedef enum { FORWARD = 1, TERMINATE } instructType;
 
 typedef struct spacket {
 	packetType pType;
