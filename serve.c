@@ -123,6 +123,10 @@ static void myExitHandler(int sig)
 	printf("\n");
 	for(int i = 0; i < LISTENSIZE; i++){
 		if(client_list[i].fd > 0){
+			packet disconnect_packet;
+			disconnect_packet.pType = INSTRUCT;
+			disconnect_packet.type = TERMINATE;
+			send(client_list[i].fd, (char*)&disconnect_packet, sizeof(packet), 0);
 			printf("\t\tsockfd:%d connect close\n", client_list[i].fd);
 			close(client_list[i].fd);
 			client_list[i].fd = 0;
