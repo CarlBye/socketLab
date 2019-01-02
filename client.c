@@ -19,7 +19,7 @@ void *waitServer(void* socketfd){
 	while(1) {
 		memset(pkt.data, 0, sizeof(pkt.data));       //check!
 		recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
-		if(pkt.type == TERMINATE) {
+		if(pkt.type == TERMINATE && pkt.pType == INSTRUCT) {
 			printf("(Client) Server connection terminated!\n");
 			pthread_exit(0);
 		}
