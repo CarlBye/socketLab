@@ -8,7 +8,7 @@
 #include <sys/types.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
-#include <sys/shm.h>  
+#include <sys/shm.h>
 
 #include "packet.h"
 
@@ -16,23 +16,21 @@
 
 void *waitServer(void* socketfd){
 	packet pkt;
-	char buf[20];
 	while(1) {
-		int recvBytes = recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
-		if(recvBytes > 0) {
-			printf("%s\n",pkt.data);
-		}
-		else {
-			printf("(Client) Socket has been terminated! ");
+		memset(pkt.data, 0, sizeof(pkt.data));       //check!
+		recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
+		if(p->type == TERMINATE) {
+			printf("(Client) Server connection terminated! ");
 			pthread_exit(0);
-		}		
+		}
+		printf("%s\n",pkt.data);
 	}
 }
 
 void sendDisRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type = (int)DISCONNECT;
+	pkt.type == (int)DISCONNECT;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -40,7 +38,7 @@ void sendDisRequestPacket(int socketfd) {
 void sendTimeRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type = (int)TIME;
+	pkt.type == (int)TIME;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -48,7 +46,7 @@ void sendTimeRequestPacket(int socketfd) {
 void sendNameRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type = (int)NAME;
+	pkt.type == (int)NAME;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -56,7 +54,7 @@ void sendNameRequestPacket(int socketfd) {
 void sendListRequestPacket(int socketfd) {
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type = (int)LIST;
+	pkt.type == (int)LIST;
 	memset(pkt.data, 0, sizeof(pkt.data));
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
@@ -65,7 +63,7 @@ void sendMessageRequestPacket(int socketfd) {
 	int destClient;
 	packet pkt;
 	pkt.pType = REQUEST;
-	pkt.type = (int)MESSAGE;
+	pkt.type == (int)MESSAGE;
 	memset(pkt.data, 0, sizeof(pkt.data));
 
 	printf("(Client) PLease input client id you want to send: ");
@@ -171,8 +169,7 @@ start:	printf("        Welcome To Socket Client!       \n");
 					sendDisRequestPacket(socketfd);
 					exit(0);
 			}
-		}
-		pthread_join(p, NULL); 
+		} 
 	    close(socketfd);
 	 	pthread_cancel(p);
 	}
