@@ -304,7 +304,7 @@ void handleTimePacket(packet *get_packet, int fd)
 	struct tm *lt;
 	time(&t);
 	lt = localtime(&t);
-	int num_bytes = sprintf(s_packet.data, "(Server) Date:%d/%d/%d Time:%d:%d:%d\n", lt->tm_year + 1900, lt->tm_mon, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
+	int num_bytes = sprintf(s_packet.data, "(Server) Date:%d/%d/%d Time:%d:%d:%d\n", lt->tm_year + 1900, lt->tm_mon + 1, lt->tm_mday, lt->tm_hour, lt->tm_min, lt->tm_sec);
 	s_packet.pType = RESPONSE;
 	s_packet.type = CORRECT;
 	send(fd, (char*)&s_packet, sizeof(s_packet), 0);
