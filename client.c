@@ -19,8 +19,8 @@ void *waitServer(void* socketfd){
 	while(1) {
 		memset(pkt.data, 0, sizeof(pkt.data));       //check!
 		recv(*(int*)socketfd, (char *)&pkt, sizeof(pkt), 0);
-		printf("%d\n",pkt.type);
-		printf("%s\n",pkt.data);
+		// printf("%d\n",pkt.type);
+		// printf("%s\n",pkt.data);
 		if(pkt.type == 1) {
 			printf("(Client) Server connection terminated!\n");
 			pthread_exit(0);
@@ -33,7 +33,7 @@ void sendDisRequestPacket(int socketfd) {
 	pkt.pType = REQUEST;
 	pkt.type = (int)DISCONNECT;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
+	// printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
@@ -42,7 +42,7 @@ void sendTimeRequestPacket(int socketfd) {
 	pkt.pType = REQUEST;
 	pkt.type = (int)TIME;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
+	// printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
@@ -51,7 +51,7 @@ void sendNameRequestPacket(int socketfd) {
 	pkt.pType = REQUEST;
 	pkt.type = (int)NAME;
 	memset(pkt.data, 0, sizeof(pkt.data));
-	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
+	// printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
 }
 
@@ -80,7 +80,7 @@ void sendMessageRequestPacket(int socketfd) {
 	fgets(pkt.data + sizeof(int), MAXDATALEN - sizeof(int), stdin);
 
 	send(socketfd, (char *)&pkt, sizeof(pkt), 0);
-	printf("pType:%d type:%d\n",pkt.pType, pkt.type);
+	// printf("pType:%d type:%d\n",pkt.pType, pkt.type);
 	printf("(Client) sending message to client %d\n", destClient);
 }
 
