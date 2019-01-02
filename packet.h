@@ -6,7 +6,7 @@
 typedef enum { REQUEST, RESPONSE, INSTRUCT } packetType;
 typedef enum { TIME, NAME, LIST, MESSAGE ,DISCONNECT} requestType;
 typedef enum { CORRECT, WRONG } responseType;
-typedef enum { FORWARD } instructType;
+typedef enum { FORWARD, TERMINATE } instructType;
 
 typedef struct spacket {
 	packetType pType;
